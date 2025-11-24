@@ -1,0 +1,39 @@
+# Default configuration for Veriform benchmarks
+
+# Perturbation settings
+perturbation_probabilities:
+  - 0.0
+  - 0.2
+  - 0.4
+  - 0.6
+  - 0.8
+  - 1.0
+
+perturbation_strategies:
+  - operator_swap
+  - value_change
+  - logical_negation
+
+# Dataset settings
+dataset_name: gsm8k
+sample_size: 100  # Number of reasoning chains to sample
+
+# Autoformalization settings
+autoformalization_model: gpt-4  # Options: gpt-4, gpt-3.5-turbo, claude-3-opus, etc.
+autoformalization_temperature: 0.0
+max_retries: 3
+
+# Lean verification settings
+lean_timeout: 30  # seconds
+use_sorry_context: true
+
+# Output settings
+output_dir: ./experiments/outputs
+save_intermediate: true
+
+# Random seed for reproducibility
+random_seed: 42
+
+# API keys (alternatively set via environment variables)
+# openai_api_key: your_key_here
+# anthropic_api_key: your_key_here
