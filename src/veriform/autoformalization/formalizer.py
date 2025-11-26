@@ -142,18 +142,38 @@ class Autoformalization(ABC):
 class OpenAIFormalizer(Autoformalization):
     """Autoformalization using OpenAI models."""
 
-    def __init__(self, api_key: Optional[str] = None, **kwargs):
+    def __init__(self, api_key: Optional[str] = None, 
+                 vllm = False,
+                 **kwargs):
         super().__init__(**kwargs)
 
         try:
             from openai import OpenAI
         except ImportError:
             raise ImportError("Please install openai: pip install openai")
+        
+        
+        if vllm:
+            # Modify OpenAI's API key and API base to use vLLM's API server.
+            openai_api_key = "EMPTY"
+            openai_api_base = "http://localhost:8000/v1"
 
-        self.client = OpenAI(api_key=api_key)
+            self.client = OpenAI(
+                # defaults to os.environ.get("OPENAI_API_KEY")
+                api_key=openai_api_key,
+                base_url=openai_api_base,
+            )
+
+            # ensure the chosen model is among the possible models in local VLLM server
+            assert self.model in self.client.models.list(), "The chosen model is not available on your local VLLM server!!!"
+
+        else:
+            self.client = OpenAI(api_key=api_key)
 
     def _call_llm(self, prompt: str, system_prompt: str) -> str:
         """Call OpenAI API."""
+            
+
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[
@@ -226,6 +246,7 @@ def get_formalizer(
     formalizers = {
         "openai": OpenAIFormalizer,
         "anthropic": AnthropicFormalizer,
+        "vllm": OpenAIFormalizer,
         "mock": MockFormalizer,
     }
 
@@ -235,5 +256,7 @@ def get_formalizer(
             f"Unknown provider: {provider}. "
             f"Available: {list(formalizers.keys())}"
         )
+    if provider=="vllm":
+        return formalizer_class(model=model, api_key=api_key, vllm=True, **kwargs)
 
     return formalizer_class(model=model, api_key=api_key, **kwargs)

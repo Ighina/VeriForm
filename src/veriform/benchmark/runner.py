@@ -84,8 +84,11 @@ class BenchmarkRunner:
             elif "claude" in self.config.autoformalization_model.lower():
                 provider = "anthropic"
                 api_key = self.config.anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
-            else:
+            elif "mock" in self.config.autoformalization_model.lower():
                 provider = "mock"
+                api_key = None
+            else:
+                provider = "vllm"
                 api_key = None
 
             self._formalizer = get_formalizer(
