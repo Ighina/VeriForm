@@ -115,7 +115,7 @@ class Autoformalization(ABC):
 
                 lean_code, last_error, attempt, response = self.__formalization_step(proving_prompt, None)
 
-                metadata["proving_attempts": attempt]
+                metadata["proving_attempts"] = attempt
 
                 if lean_code:
                     return FormalizationResult(
