@@ -4,6 +4,7 @@ Prompt templates for autoformalization.
 
 from typing import List
 from veriform.data_collection import ReasoningStep
+from templates import NLVTemplate, FormalTemplate, SafeFormalTemplate, ProverTemplate, STEP_NLV_TEMPLATE, STEPS_SAFE_TEMPLATE, PROVER_TEMPLATE, IN_CONTEXT_LEAN_TEMPLATE
 
 
 AUTOFORMALIZATION_SYSTEM_PROMPT = """You are an expert in formal mathematics and the Lean theorem prover. Your task is to translate natural language mathematical reasoning steps into Lean 4 code.
@@ -20,7 +21,8 @@ Important guidelines:
 def create_autoformalization_prompt(
     step: ReasoningStep,
     context_steps: List[ReasoningStep],
-    problem_statement: str
+    problem_statement: str,
+    template = "safe"
 ) -> str:
     """
     Create a prompt for autoformalizing a reasoning step.
@@ -33,35 +35,42 @@ def create_autoformalization_prompt(
     Returns:
         A formatted prompt string
     """
-    prompt_parts = []
+    if template == "safe":
+        autoformalization_template = SafeFormalTemplate(STEPS_SAFE_TEMPLATE)
+        prover_template = ProverTemplate(PROVER_TEMPLATE)
 
-    # Add problem statement
-    prompt_parts.append("## Problem Statement")
-    prompt_parts.append(problem_statement)
-    prompt_parts.append("")
+        return autoformalization_template, prover_template
 
-    # Add context steps as sorry lemmas
-    if context_steps:
-        prompt_parts.append("## Previous Steps (assume these as lemmas)")
-        for i, ctx_step in enumerate(context_steps):
-            prompt_parts.append(f"Step {i + 1}: {ctx_step.content}")
+    else:
+        prompt_parts = []
+
+        # Add problem statement
+        prompt_parts.append("## Problem Statement")
+        prompt_parts.append(problem_statement)
         prompt_parts.append("")
 
-    # Add current step to formalize
-    prompt_parts.append("## Step to Formalize")
-    prompt_parts.append(step.content)
-    prompt_parts.append("")
+        # Add context steps as sorry lemmas
+        if context_steps:
+            prompt_parts.append("## Previous Steps (assume these as lemmas)")
+            for i, ctx_step in enumerate(context_steps):
+                prompt_parts.append(f"Step {i + 1}: {ctx_step.content}")
+            prompt_parts.append("")
 
-    # Add instructions
-    prompt_parts.append("## Instructions")
-    prompt_parts.append(
-        "Translate the step above into Lean 4 code. "
-        "If the reasoning contains an error, your formalization should preserve that error. "
-        "Do NOT correct mistakes - translate faithfully. "
-        "Return only the Lean code, enclosed in ```lean code blocks."
-    )
+        # Add current step to formalize
+        prompt_parts.append("## Step to Formalize")
+        prompt_parts.append(step.content)
+        prompt_parts.append("")
 
-    return "\n".join(prompt_parts)
+        # Add instructions
+        prompt_parts.append("## Instructions")
+        prompt_parts.append(
+            "Translate the step above into Lean 4 code. "
+            "If the reasoning contains an error, your formalization should preserve that error. "
+            "Do NOT correct mistakes - translate faithfully. "
+            "Return only the Lean code, enclosed in ```lean code blocks."
+        )
+
+        return "\n".join(prompt_parts)
 
 
 def create_batch_autoformalization_prompt(

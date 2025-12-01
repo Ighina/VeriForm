@@ -40,11 +40,14 @@ class Autoformalization(ABC):
         model: str,
         temperature: float = 0.0,
         max_retries: int = 3,
+        template: str = "safe"
         **kwargs
     ):
+        # TODO: Allow multiple models for multistep formalization (e.g. AF + Prover)
         self.model = model
         self.temperature = temperature
         self.max_retries = max_retries
+        self.template = template
         self.kwargs = kwargs
 
     @abstractmethod
@@ -52,6 +55,30 @@ class Autoformalization(ABC):
         """Call the LLM with the given prompt."""
         pass
 
+    def __formalization_step(self,
+                             prompt,
+                             system_prompt):
+        
+        # Try with retries
+        last_error = None
+        lean_code = None
+        response = "NOT PROVIDED"
+        for attempt in range(self.max_retries):
+            try:
+                response = self._call_llm(prompt, system_prompt)
+                lean_code = self._extract_lean_code(response)
+
+                if lean_code:
+                    return lean_code
+                else:
+                    last_error = "Could not extract Lean code from response"
+
+            except Exception as e:
+                last_error = str(e)
+                if attempt < self.max_retries - 1:
+                    time.sleep(2 ** attempt)  # Exponential backoff
+        return lean_code, last_error, attempt, response
+        
     def formalize_step(
         self,
         step: ReasoningStep,
@@ -71,12 +98,24 @@ class Autoformalization(ABC):
         """
         prompt = create_autoformalization_prompt(step, context_steps, problem_statement)
 
-        # Try with retries
-        last_error = None
-        for attempt in range(self.max_retries):
-            try:
-                response = self._call_llm(prompt, AUTOFORMALIZATION_SYSTEM_PROMPT)
-                lean_code = self._extract_lean_code(response)
+        # if prompt include two elements, then assume we are using the typical AF + Proving framework
+        if isinstance(prompt, tuple):
+            assert len(prompt)==2, "If using a template with separate AF and Proving steps you need to pass two separate prompt templates!"
+            
+            af_prompt = prompt[0].format(step.content, [s.content for s in context_steps], problem_statement)
+
+            formal_statement, last_error, attempt, response = self.__formalization_step(af_prompt, None)
+
+            metadata = {"af_attempts": attempt, 
+                        "af_response": response, 
+                        "af_lean_code": formal_statement if formal_statement else ""}
+
+            if formal_statement:
+                proving_prompt = prompt[1].format(formal_statement)
+
+                lean_code, last_error, attempt, response = self.__formalization_step(proving_prompt, None)
+
+                metadata["proving_attempts": attempt]
 
                 if lean_code:
                     return FormalizationResult(
@@ -84,25 +123,42 @@ class Autoformalization(ABC):
                         lean_code=lean_code,
                         raw_response=response,
                         success=True,
-                        metadata={"attempts": attempt + 1}
+                        metadata=metadata
                     )
-                else:
-                    last_error = "Could not extract Lean code from response"
+                
+            return FormalizationResult(
+                        step_id=step.step_id,
+                        lean_code="",
+                        raw_response=response,
+                        success=False,
+                        metadata=metadata
+                    )
 
-            except Exception as e:
-                last_error = str(e)
-                if attempt < self.max_retries - 1:
-                    time.sleep(2 ** attempt)  # Exponential backoff
 
-        # All retries failed
-        return FormalizationResult(
-            step_id=step.step_id,
-            lean_code="",
-            raw_response="",
-            success=False,
-            error_message=last_error,
-            metadata={"attempts": self.max_retries}
-        )
+        elif isinstance(prompt, str):
+            # Try with retries
+            lean_code, last_error, attempt, response = self.__formalization_step(prompt, AUTOFORMALIZATION_SYSTEM_PROMPT)
+
+            if lean_code:
+                return FormalizationResult(
+                    step_id=step.step_id,
+                    lean_code=lean_code,
+                    raw_response=response,
+                    success=True,
+                    metadata={"attempts": attempt + 1}
+                )
+            else:
+                # All retries failed
+                return FormalizationResult(
+                    step_id=step.step_id,
+                    lean_code="",
+                    raw_response="",
+                    success=False,
+                    error_message=last_error,
+                    metadata={"attempts": self.max_retries}
+                )
+        else:
+            raise NotImplementedError()
 
     def formalize_chain(self, chain: ReasoningChain) -> List[FormalizationResult]:
         """
@@ -173,16 +229,25 @@ class OpenAIFormalizer(Autoformalization):
     def _call_llm(self, prompt: str, system_prompt: str) -> str:
         """Call OpenAI API."""
             
-
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=self.temperature,
-            **self.kwargs
-        )
+        if system_prompt:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=self.temperature,
+                **self.kwargs
+            )
+        else:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=self.temperature,
+                **self.kwargs
+            )
         return response.choices[0].message.content
 
 
