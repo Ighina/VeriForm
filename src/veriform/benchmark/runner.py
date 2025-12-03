@@ -179,9 +179,13 @@ class BenchmarkRunner:
                 "formalization_results": [
                     {
                         "step_id": r.step_id,
+                        "step_content": r.step_content,
+                        "step_perturbed": r.is_perturbed,
                         "success": r.success,
+                        "lean_code": r.lean_code,
                         "has_lean_code": bool(r.lean_code),
-                        "error": r.error_message
+                        "error": r.error_message,
+                        "metadata": r.metadata
                     }
                     for r in formalization_results
                 ],
@@ -237,11 +241,18 @@ class BenchmarkRunner:
         overall_stats = self._compute_overall_statistics(runs)
 
         # Create results
-        results = BenchmarkResults(
-            config=asdict(self.config),
-            runs=runs,
-            overall_statistics=overall_stats
-        )
+        try:
+            results = BenchmarkResults(
+                config=asdict(self.config),
+                runs=runs,
+                overall_statistics=overall_stats
+            )
+        except TypeError:
+            results = BenchmarkResults(
+                config=self.config.model_dump(),
+                runs=runs,
+                overall_statistics=overall_stats
+            )
 
         # Save final results
         self._save_results(results)

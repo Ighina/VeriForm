@@ -21,6 +21,8 @@ class FormalizationResult:
     """Result of autoformalizing a reasoning step."""
 
     step_id: str
+    step_content: str
+    is_perturbed: bool
     lean_code: str
     raw_response: str
     success: bool
@@ -120,6 +122,8 @@ class Autoformalization(ABC):
                 if lean_code:
                     return FormalizationResult(
                         step_id=step.step_id,
+                        step_content=step.content,
+                        is_perturbed=step.is_perturbed,
                         lean_code=lean_code,
                         raw_response=response,
                         success=True,
@@ -128,6 +132,8 @@ class Autoformalization(ABC):
                 
             return FormalizationResult(
                         step_id=step.step_id,
+                        step_content=step.content,
+                        is_perturbed=step.is_perturbed,
                         lean_code="",
                         raw_response=response,
                         success=False,
@@ -142,6 +148,8 @@ class Autoformalization(ABC):
             if lean_code:
                 return FormalizationResult(
                     step_id=step.step_id,
+                    step_content=step.content,
+                    is_perturbed=step.is_perturbed,
                     lean_code=lean_code,
                     raw_response=response,
                     success=True,
@@ -151,6 +159,8 @@ class Autoformalization(ABC):
                 # All retries failed
                 return FormalizationResult(
                     step_id=step.step_id,
+                    step_content=step.content,
+                    is_perturbed=step.is_perturbed,
                     lean_code="",
                     raw_response="",
                     success=False,
