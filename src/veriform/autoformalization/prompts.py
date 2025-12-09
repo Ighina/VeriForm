@@ -37,9 +37,9 @@ def create_autoformalization_prompt(
     """
     if template == "safe":
         autoformalization_template = SafeFormalTemplate(STEPS_SAFE_TEMPLATE)
-        prover_template = ProverTemplate(PROVER_TEMPLATE)
-
-        return autoformalization_template, prover_template
+        # prover_template = ProverTemplate(PROVER_TEMPLATE)
+        return autoformalization_template
+        # return autoformalization_template, prover_template
 
     else:
         prompt_parts = []
