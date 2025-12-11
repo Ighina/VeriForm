@@ -93,3 +93,55 @@ class DatasetConfig(BaseModel):
     num_samples: Optional[int] = None
     filter_criteria: Optional[Dict[str, Any]] = None
     preprocessing_steps: List[str] = Field(default_factory=list)
+
+
+class AgenticVerifierConfig(BaseModel):
+    """Configuration for the agentic verifier."""
+
+    # Model settings
+    model: str = Field(
+        default="gpt-4",
+        description="Model to use for verification"
+    )
+    provider: str = Field(
+        default="openai",
+        description="LLM provider (openai, anthropic)"
+    )
+    temperature: float = Field(
+        default=0.0,
+        description="Temperature for LLM calls"
+    )
+
+    # Strategy toggles
+    enable_python_verifier: bool = Field(
+        default=True,
+        description="Enable Python synthesis verification for computational statements"
+    )
+    enable_autoformalization: bool = Field(
+        default=True,
+        description="Enable autoformalization + Lean verification for logical/mathematical statements"
+    )
+    enable_llm_judge: bool = Field(
+        default=True,
+        description="Enable LLM judge verification for general statements"
+    )
+    fallback_to_llm_judge: bool = Field(
+        default=True,
+        description="Whether to fallback to LLM judge if other methods fail"
+    )
+
+    # Python verifier settings
+    python_execution_timeout: int = Field(
+        default=5,
+        description="Timeout in seconds for Python code execution"
+    )
+    max_retries: int = Field(
+        default=3,
+        description="Maximum retries for verification attempts"
+    )
+
+    # Output settings
+    verbose: bool = Field(
+        default=False,
+        description="Whether to print routing decisions and debug info"
+    )
