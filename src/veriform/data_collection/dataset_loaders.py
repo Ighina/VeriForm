@@ -48,7 +48,7 @@ class GSM8KLoader(DatasetLoader):
         chains = []
         for idx, example in enumerate(dataset):
             chain = ReasoningChain(
-                chain_id=f"gsm8k_{self.split}_{idx}",
+                chain_id=idx,
                 problem_statement=example["question"],
                 steps=self.parse_reasoning_steps(example),
                 final_answer=self._extract_final_answer(example["answer"]),
@@ -77,11 +77,11 @@ class GSM8KLoader(DatasetLoader):
             step_type = self._classify_step(line)
 
             step = ReasoningStep(
-                step_id=f"step_{step_idx}",
+                step_id=step_idx,
                 content=line,
                 step_type=step_type,
-                previous_steps=[f"step_{i}" for i in range(step_idx)],
-                metadata={"line_number": step_idx},
+                previous_steps=[i for i in range(step_idx)],
+                metadata={"line_number": step_idx}
             )
             steps.append(step)
 
@@ -118,7 +118,7 @@ class MATHLoader(DatasetLoader):
         chains = []
         for idx, example in enumerate(dataset):
             chain = ReasoningChain(
-                chain_id=f"math_{self.split}_{idx}",
+                chain_id=idx,
                 problem_statement=example["problem"],
                 steps=self.parse_reasoning_steps(example),
                 final_answer=example["solution"],
@@ -146,11 +146,11 @@ class MATHLoader(DatasetLoader):
             step_type = self._classify_step(line)
 
             step = ReasoningStep(
-                step_id=f"step_{step_idx}",
+                step_id=step_idx,
                 content=line,
                 step_type=step_type,
-                previous_steps=[f"step_{i}" for i in range(step_idx)],
-                metadata={"line_number": step_idx},
+                previous_steps=[i for i in range(step_idx)],
+                metadata={"line_number": step_idx}
             )
             steps.append(step)
 
@@ -261,7 +261,7 @@ class CustomLoader(DatasetLoader):
         chains = []
         for idx, example in enumerate(data):
             chain = ReasoningChain(
-                chain_id=f"custom_{idx}",
+                chain_id=idx,
                 problem_statement=example.get("problem", ""),
                 steps=self.parse_reasoning_steps(example),
                 final_answer=example.get("answer", ""),
@@ -288,10 +288,10 @@ class CustomLoader(DatasetLoader):
                 continue
 
             step = ReasoningStep(
-                step_id=f"step_{step_idx}",
+                step_id=step_idx,
                 content=content,
                 step_type=step_type,
-                previous_steps=[f"step_{i}" for i in range(step_idx)],
+                previous_steps=[i for i in range(step_idx)],
             )
             steps.append(step)
 

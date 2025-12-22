@@ -21,10 +21,10 @@ class StepType(Enum):
 class ReasoningStep:
     """A single step in a chain of reasoning."""
 
-    step_id: str
+    step_id: int
     content: str
     step_type: StepType = StepType.OTHER
-    previous_steps: List[str] = field(default_factory=list)
+    previous_steps: List[int] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     # For perturbed steps
@@ -59,7 +59,7 @@ class ReasoningStep:
 class ReasoningChain:
     """A complete chain of reasoning steps."""
 
-    chain_id: str
+    chain_id: int
     problem_statement: str
     steps: List[ReasoningStep] = field(default_factory=list)
     final_answer: Optional[str] = None

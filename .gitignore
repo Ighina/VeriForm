@@ -52,6 +52,7 @@ data/processed/*
 !data/processed/.gitkeep
 data/outputs/*
 !data/outputs/.gitkeep
+*.pkl
 
 # Experiments
 experiments/outputs/
